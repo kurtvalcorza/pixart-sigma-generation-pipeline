@@ -1,0 +1,25 @@
+{
+  "format": "dimer_hf_snapshot",
+  "formatVersion": 1,
+  "modelKey": "pixart-sigma-xl-2-512-ms",
+  "modelId": "PixArt-alpha/PixArt-Sigma-XL-2-512-MS",
+  "revision": "76fb7eb5a9314bc1e4e479d2f13447517fca9be4",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 5543,
+      "sha256": "4ca6a0d147322fa9a3062b035603d93f31ebd3b6230c5f5a68c3e90eddc8f6af"
+    },
+    {
+      "path": "transformer/config.json",
+      "bytes": 746,
+      "sha256": "64dcb995e31aa4d84572da705d41088a0be9e94de91e4bf3ca43e05c67a9f942"
+    },
+    {
+      "path": "transformer/diffusion_pytorch_model.safetensors",
+      "bytes": 2443492488,
+      "sha256": "20f3328e926039b2fbfa0094469bc6af2a034da39bab51ebbe2019ac455186ca"
+    }
+  ],
+  "totalBytes": 2443498777
+}

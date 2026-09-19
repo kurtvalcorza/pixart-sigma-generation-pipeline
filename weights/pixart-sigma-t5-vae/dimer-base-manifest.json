@@ -1,0 +1,70 @@
+{
+  "format": "dimer_hf_snapshot",
+  "formatVersion": 1,
+  "modelKey": "pixart-sigma-t5-vae",
+  "modelId": "PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
+  "revision": "2c17b4e85261cd549b4068d086b7c2ba9d468e9f",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 26,
+      "sha256": "aed9f9e83693625c634010ca797d3c1a00b19643cc394b234433381f2c9ca7ed"
+    },
+    {
+      "path": "model_index.json",
+      "bytes": 400,
+      "sha256": "e56aa549036ba94ed16747379e8a2c84b77612b298090fbcdfc2ded43d0e20a6"
+    },
+    {
+      "path": "scheduler/scheduler_config.json",
+      "bytes": 655,
+      "sha256": "ec1638ad7fce60b92870623ae6d9472ca4f005cdb2694b74cf86ae78e1d1e0d5"
+    },
+    {
+      "path": "text_encoder/config.json",
+      "bytes": 747,
+      "sha256": "a0d07392b904954847f901e6ccf25538efc4142fb4c7b59065a06bbdb7eabff8"
+    },
+    {
+      "path": "text_encoder/model.safetensors.index.json",
+      "bytes": 19886,
+      "sha256": "fb4665a1a122b7e5270f0e4494c653839c11a5a978e03b0df6dfa714258716e6"
+    },
+    {
+      "path": "text_encoder/model-00001-of-00002.safetensors",
+      "bytes": 9989150328,
+      "sha256": "eb529f693f4b17773a24e787fcba29486d5e1700dadcc20bb91e4c8b00212d08"
+    },
+    {
+      "path": "text_encoder/model-00002-of-00002.safetensors",
+      "bytes": 9060119392,
+      "sha256": "58f33f4acba7a5502b6b3e4cb7863f8fd503d5012016428099bb460c98e2fe77"
+    },
+    {
+      "path": "tokenizer/special_tokens_map.json",
+      "bytes": 2201,
+      "sha256": "5c87151ef0f72a99d1f766a4c418bd2a1f90aaa30a8e22fe5eca9641daebb64f"
+    },
+    {
+      "path": "tokenizer/spiece.model",
+      "bytes": 791656,
+      "sha256": "d60acb128cf7b7f2536e8f38a5b18a05535c9e14c7a355904270e15b0945ea86"
+    },
+    {
+      "path": "tokenizer/tokenizer_config.json",
+      "bytes": 2349,
+      "sha256": "8463612fde6595bf924e405f08192e1c58887e71332db2b9b287052dd3e180e1"
+    },
+    {
+      "path": "vae/config.json",
+      "bytes": 631,
+      "sha256": "f18b16fa4381c90ab44a3d7abd2e90afd05a2c31b8ca69998bc93c6453aeb7b7"
+    },
+    {
+      "path": "vae/diffusion_pytorch_model.safetensors",
+      "bytes": 334643238,
+      "sha256": "1b909373b28f2137098b0fd9dbc6f97f8410854f31f84ddc9fa04b077b0ace2c"
+    }
+  ],
+  "totalBytes": 19384731509
+}
