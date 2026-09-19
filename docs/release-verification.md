@@ -75,7 +75,7 @@ Before changing the registry status from `Candidate` to `Release-grade`:
    `LEARNING_RATE = 1e-4`, `BATCH_SIZE = 1`);
 4. verify that Section 1 reports `NOTEBOOK_SOURCE.repository_revision` equal to the revision recorded in
    `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS`
-   (= `pyproject.toml`): `torch==2.14.0`, `torchvision==0.29.0`, `diffusers==0.40.0`, `transformers==5.17.0`,
+   (= `pyproject.toml`): `torch==2.14.0`, `torchvision==0.29.0`, `torchaudio==2.11.0`, `diffusers==0.40.0`, `transformers==5.17.0`,
    `peft==0.21.0`, `accelerate==1.15.0`, `tokenizers==0.23.2`, `sentencepiece==0.2.2`, `protobuf==7.36.2`,
    `safetensors==0.8.0`, `huggingface-hub==1.32.0`, `numpy==2.5.3`, `pillow==11.3.0` (an interpreter restart after
    the install is expected where the runtime's preinstalled torch or numpy differ from the pins);

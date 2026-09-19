@@ -12,6 +12,9 @@ dependencies = [
   # pinned beside torch because the import chain reaches it.
   "torch==2.14.0",
   "torchvision==0.29.0",
+  # torchaudio is pinned beside torch because `transformers` imports it when it is present and a hosted image's
+  # torchaudio built for another CUDA version refuses to load (Kaggle: torch cu130 vs preinstalled torchaudio cu128)
+  "torchaudio==2.11.0",
   "diffusers==0.40.0",
   "transformers==5.17.0",
   "peft==0.21.0",
