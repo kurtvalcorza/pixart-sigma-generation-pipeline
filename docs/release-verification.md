@@ -127,6 +127,7 @@ A known-failing default path in the supported runtime blocks release (REL11).
 | Notebook | Commit / notebook blob | Date (UTC) | Executor | Outcome |
 |---|---|---|---|---|
 | `pixart_sigma_generation_colab.ipynb` (`E2E`) | pending | — | Kaggle Tesla T4 or Colab GPU, clean runtime, no repository checkout | **Not executed** — required before promotion |
+| `pixart_sigma_generation_colab.ipynb` | generated, pre-commit | 2026-09-19 | Local pre-flight harness (WSL, CPython 3.12.3, CUDA RTX 5070 Ti laptop, `google.colab` shim, pins pre-installed) | PASS — pre-flight only, **not** promotion evidence |
 
 ## Recorded executions
 
@@ -137,6 +138,7 @@ runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
+| 2026-09-19 | generated, pre-commit | Local pre-flight harness (WSL, CPython 3.12.3, `torch 2.14.0+cu130`, RTX 5070 Ti laptop 12 GB, `diffusers 0.40.0`, `transformers 5.17.0`, `peft 0.21.0`) | Default sample path (stage → verify the three snapshots → load transformer + LoRA / VAE → pinned-photo fetch from the cache → validate → refusal probes → encode prompts + release encoder → frozen evaluation, generations and real-photo ceiling → LoRA adapt → paired evaluation → new prompt → export → reload); the three snapshots and the 60 photographs were pre-staged, so every staging call fetched 0 entries and the run verified 24 files by digest | 1994.8 s | **PASSED** — 11/11 code cells; probes refused; frozen test denoising MSE 0.105939 → adapted 0.105800 (best epoch 3; printed, not asserted); encoder peak on the 12 GB GPU; adapter 448 tensors; reload parity identical. Pre-flight; hosted clean-runtime run still required |
 
 ## Current status
 
