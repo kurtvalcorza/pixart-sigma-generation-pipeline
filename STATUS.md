@@ -1,0 +1,5 @@
+# Release status
+
+Current status: **Candidate** — E2E fine-tuning tutorial source complete, awaiting supported clean-runtime execution. The pipeline package, the offline unit tests (including the stub-transformer adaptation tests and the notebook parity tests), the model-backed GPU smoke, `MODEL_CARD.md` (MODEL_CARD_SPEC 1.1), the static validator (`tools/validate_release_assets.py`), the generator parity checks and the CI workflow exist and are green; the generated notebook passed a local GPU pre-flight. No clean supported-runtime execution of a committed notebook blob has been recorded in `docs/release-verification.md`, which is the gate for **Release-grade**.
+
+Two gates are open for DIMER hosting, neither of them code: the transformer's licence is CreativeML Open RAIL++-M (use-based restrictions that must travel with any profile and any adapter), and the served set is about 22.8 GB (the float32 T5-XXL shards alone are 19 GB), far above the fleet's 9 GB publication convenience gate. Both are recorded in `docs/WEIGHTS.md` and `MODEL_CARD.md` and are the maintainer's call, not this repository's.
