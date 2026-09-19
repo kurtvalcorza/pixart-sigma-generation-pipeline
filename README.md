@@ -78,7 +78,7 @@ Tests are offline: temporary manifests, synthetic images, an injected fetcher an
 
 ## Release status
 
-**Candidate** — the `E2E` notebook's source, the generator parity checks, the static validator and the offline unit suite are complete and green, and the generated notebook passed a local GPU pre-flight; no clean supported-runtime execution of a committed notebook blob has been recorded yet. The gate and the procedure are in `docs/release-verification.md`; `STATUS.md` carries the current token.
+**Release-grade** — the `E2E` notebook blob `99829b51` (committed at `4862a6e`) executed top-to-bottom in a clean Kaggle Tesla T4 runtime on 2026-09-19 (11/11 ok (1 restart after install cell), 1582.8 s); the record is in `docs/release-verification.md` and `STATUS.md`. Static and unit checks — including the standalone generator parity checks — are necessary but were never the evidence; the hosted run is. A later change to the carried modules or the notebook returns the status to Candidate until re-verified.
 
 ## Licensing
 
