@@ -18,6 +18,9 @@ dependencies = [
   "diffusers==0.40.0",
   "transformers==5.17.0",
   "peft==0.21.0",
+  # torchao is never called; peft's LoRA dispatcher raises ImportError when a hosted image preinstalls a torchao older
+  # than 0.16 (Kaggle ships 0.10.0), so a supported version is pinned to make the injection deterministic there
+  "torchao==0.18.0",
   "accelerate==1.15.0",
   "tokenizers==0.23.2",
   "sentencepiece==0.2.2",
