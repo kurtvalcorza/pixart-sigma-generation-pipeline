@@ -151,7 +151,7 @@ The model must not be used to generate images that depict identifiable people wi
 
 | Field | Status |
 |---|---|
-| **DIMER status** | **Planned / conditional** — two gates are open, neither of them code: the licence family and the size of the served set; both are Kurt's call |
+| **DIMER status** | **Planned / conditional** — two gates are open, neither of them code: the licence family and the size of the served set; both are the maintainer's call |
 | Licence | Transformer: CreativeML Open RAIL++-M — redistribution and commercial use permitted subject to the use-based restrictions, which must accompany any profile and any adapter; components repository `openrail`; scorer MIT; this repository's code Apache-2.0 |
 | Weights | Would be redistributed unmodified: the safetensors files as published at the pinned revisions; this repository vendors none of them |
 | Remote code | **Not required** — no Hub-hosted module is imported; the classes come from `diffusers==0.40.0`, `transformers==5.17.0` and `peft==0.21.0` on PyPI |
