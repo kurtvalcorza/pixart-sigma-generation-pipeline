@@ -1,0 +1,38 @@
+# pixart_sigma_generation_colab — fleet-sweep fixes (2026-10-05)
+
+Targeted fix of the 2026-10-05 fleet sweep findings. There is no full Notebook Review Framework v1 report for this
+notebook; each flag was first confirmed in the cell source on `main` (`00f3e04`). All changes are made in the
+generator (`tools/build_notebook.py`, `tools/notebook_template*.py`) and the notebook is regenerated. STATUS and the
+release labels are unchanged. **Readiness: Verification pending** (hosted Run all not yet done).
+
+## Findings and fixes
+
+| ID | Status | Change | Cells / files touched | Evidence |
+|---|---|---|---|---|
+| SWP-R | Fixed — hosted confirmation pending | Confirmed: Section 1 ran `pip install` into the kernel and raised "Restart the runtime" on stale modules. Generator upgraded to `build_notebook.py/2.2` (the fleet isolated runtime): one kernel cell downloads the pinned `uv` 0.12.15 wheel (size + SHA-256), builds a managed CPython 3.12.12 environment from the new hash lock `tutorials/requirements-colab.lock.txt` (`--require-hashes --only-binary :all:`), and routes every later cell to one persistent worker. The environment folder is keyed on the lock digest and reused by a re-run or a second Run all; re-running Section 1 keeps the live worker and its variables; the worker gets `MPLBACKEND=Agg` and no `PYTHONPATH`/`PYTHONHOME`/`PYTHONSTARTUP`. | Section 1 (kernel cell + "Record the runtime"); `tools/build_notebook.py`; `tutorials/requirements-colab.lock.txt`; `tools/validate_release_assets.py` (install markers, bootstrap check, kernel cell excluded from the library-use scan); `docs/release-verification.md` (the line describing that check) | `test_swp_r_no_pip_install_or_restart_in_any_cell`, `test_swp_r_lock_is_carried_hash_locked_and_matches_pins`, `test_swp_r_environment_keyed_on_lock_and_child_env_cleaned`, `test_swp_r_section1_reuses_environment_and_worker_when_rerun` (executes the notebook's own kernel cell with a stand-in IPython shell; the worker runs on the test interpreter) |
+| SWP-G | Fixed | Confirmed: 1 of 9 guided markers on `main`. Guided opening added (audience, Input → Model → Output, How to use this notebook with the one-pass Run all statement, roadmap with concept tags); a **Predict** prompt before Sections 4–9 and six collapsible **Check your reasoning** answers quoting the recorded 2026-09-19 Kaggle T4 run (frozen/adapted test denoising MSE 0.105983 → 0.105838, validation 0.109093 → 0.108941 at best epoch 3, CLIP 26.79/0.50/65.57 → 28.01/0.50/68.95 against the ceiling 30.25/0.917/88.66, parity 0.0/0.0; run-dependent memory and timing figures are stated qualitatively); Troubleshooting (isolated runtime, GPU memory, snapshots, data fetch, section order, BYOD), Change one thing, Glossary and Conclusion (your notes) sections; Sections 1–3 labelled Infrastructure and collapsed. A literal `{{id, image, caption}}` in the Prerequisites is corrected. | `tools/notebook_template.py` (`guided.opening`, prerequisites, Sections 4–9 markdown, closing) | `test_swp_g_guided_layer_present`, `test_swp_g_infrastructure_cells_labelled_and_collapsed`, `test_swp_g_no_leftover_placeholders`, `test_swp_g_checkpoint_answers_quote_the_recorded_run` |
+| SWP-A | Not applicable | The sweep found no quality assert. The two Section 8 asserts (`best['val_loss'] <= history[0]['val_loss']`, re-scored validation equals the history) are selection-consistency contracts and stay; the test-set change is printed as an observation, as before. | — | — |
+| SWP-F | Fixed | Confirmed in the same cells: `pipe.adapt` snapshots whatever LoRA state the transformer holds when it starts, so a second run of Section 7 (invited by the closing's optional experiments) trained on top of the previous adaptation while Section 6's numbers were still labelled frozen, and a re-run of Section 6 scored the adapted model as frozen. Section 6 now takes `frozen_lora_state` once (the untrained LoRA, B = 0, before any training) and defines `restore_frozen_lora()`; a re-run of Section 6 restores it, Section 7 restores it before `pipe.adapt` and raises if epoch 0 does not reproduce Section 6's frozen validation loss (tolerance 1e-4, the notebook's existing re-score tolerance). The base weights are untouched. | Section 6 and 7 code; Section 7 markdown; closing | `test_swp_f_section_6_takes_the_frozen_snapshot_once_and_restores_it_on_a_rerun` (executes the Section 6 helper with a stand-in transformer), `test_swp_f_section_7_restores_the_frozen_lora_before_training_and_checks_epoch_0` |
+| SWP-B | Fixed | Confirmed in the same cell: BYOD worked only through `google.colab.files.upload()` and `next(iter(uploaded.items()))` (bare `StopIteration` on a cancelled dialog). Section 4 gains a `BYOD_PATH` form field read by `byod_file` (Kaggle/Jupyter); the Colab upload is the guarded fallback (exactly one file; a cancelled or empty dialog, a runtime without the dialog, a missing path and a non-`.zip` file each get a message naming the file and the rule). | Section 4 code; `byod` header text | `test_swp_b_byod_path_reads_a_zip_and_refusals_name_the_file`, `test_swp_b_cancelled_upload_is_named_and_one_upload_is_saved`, `test_swp_b_byod_gate_is_off_by_default_and_has_a_path_field` |
+
+## User-visible changes
+
+- Section 1 is one collapsed infrastructure cell that builds (or reuses) `dimer_isolated_env_<lock digest>/` from the new hash-locked `tutorials/requirements-colab.lock.txt` (68 entries) and routes later cells to it; nothing is installed into the kernel and Run all needs no restart. Linux x86_64 runtimes only (as before, a GPU is required).
+- Guided-layer markdown throughout; Sections 1–3 collapsed; Troubleshooting, Change one thing, Glossary and Conclusion sections at the end.
+- Section 4 gains `BYOD_PATH`; BYOD refusals are named errors instead of a bare `StopIteration`.
+- Section 6 prints the frozen-LoRA snapshot state; Section 7 restores it before training and checks epoch 0 against Section 6. The default path computes the same numbers as before.
+- `docs/release-verification.md`: the two lines describing the in-kernel install and restart now describe the isolated bootstrap. No status text changed.
+
+## Verification (offline; not clean-runtime evidence)
+
+- No model stage ran here (no GPU, no torch, Hub unreachable); no pretrained-inference evidence is claimed. Checkpoint numbers are quoted from the 2026-09-19 record in `docs/release-verification.md`.
+- Stand-ins: the Section 1 kernel cell is executed with a stand-in environment (symlinked interpreter + lock marker) and a stand-in IPython shell; the Section 6 snapshot/restore helper with a stand-in transformer; the Section 7 epoch-0 check and the Section 4 `byod_file` helper with stand-in values and a fake `google.colab.files.upload`.
+- `python tools/build_notebook.py --check`: OK. `python tools/validate_release_assets.py`: PASS. `ruff check src tests tools`: clean. `pytest` (CI deps: pytest, ruff, numpy, pillow; package `--no-deps`): 34 passed before → 46 passed after.
+- `uv pip install --dry-run --require-hashes --only-binary :all: -r tutorials/requirements-colab.lock.txt` into a `uv venv --managed-python --python 3.12.12`: resolves, would install 68 packages.
+
+## Remaining gates
+
+- A hosted **Run all in one pass** on a fresh runtime (expected: no restart prompt; Section 1 builds the environment; a second Run all reports `'reused': True`).
+- The REL12 BYOD run with the BYOD gates and path fields set.
+- Hosted confirmation that the T5-XXL encoder, the scorer and the LoRA training fit on a T4 from the isolated environment as they did from the in-kernel install (same pins).
+- A full Notebook Review Framework v1 review has not been done.

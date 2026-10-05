@@ -18,8 +18,8 @@ CI runs `tools/validate_release_assets.py`, which checks:
   path; one cell per carried module (`pipeline.py`, `samples.py`, `metrics.py`), each equal to its source after the
   generator's documented rewrites; the inline `MANIFEST`, `BASE_MANIFEST` and `SCORER_MANIFEST` equal to the three
   committed snapshot manifests and the inline `PINS` equal to the `pyproject.toml` runtime pins; the notebook
-  byte-identical (on LF) to `tools/build_notebook.py` output for its recorded revision; the pinned-install cell with
-  its restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in exports;
+  byte-identical (on LF) to `tools/build_notebook.py` output for its recorded revision; the isolated-environment
+  bootstrap cell (generator /2.2: hash-locked `uv` environment, nothing installed into the kernel, no restart); `NOTEBOOK_SOURCE` recorded in exports;
 - `MODEL_ID`/`MODEL_REVISION` bound only in the carried module cell (and repeated in the inline manifest, which the
   notebook asserts against the module before staging), the revision a 40-hex immutable commit, and the same
   identity string in `README.md`, `MODEL_CARD.md` and `docs/WEIGHTS.md` with no stray revisions (the components
@@ -77,8 +77,8 @@ Before changing the registry status from `Candidate` to `Release-grade`:
    `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS`
    (= `pyproject.toml`): `torch==2.14.0`, `torchvision==0.29.0`, `torchaudio==2.11.0`, `diffusers==0.40.0`, `transformers==5.17.0`,
    `peft==0.21.0`, `torchao==0.18.0`, `accelerate==1.15.0`, `tokenizers==0.23.2`, `sentencepiece==0.2.2`, `protobuf==7.36.2`,
-   `safetensors==0.8.0`, `huggingface-hub==1.32.0`, `numpy==2.5.3`, `pillow==11.3.0` (an interpreter restart after
-   the install is expected where the runtime's preinstalled torch or numpy differ from the pins);
+   `safetensors==0.8.0`, `huggingface-hub==1.32.0`, `numpy==2.5.3`, `pillow==11.3.0` (installed into the isolated
+   hash-locked environment of Section 1, so the runtime's preinstalled torch or numpy do not matter and no restart is needed);
 5. verify every default-path stage completes:
    - pinned runtime installed from the inline `PINS` with no GitHub access;
    - the three carried module cells execute (defining `PixArtSigmaPipeline`, `build_transformer`,
