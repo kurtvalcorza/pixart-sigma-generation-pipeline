@@ -1,7 +1,14 @@
 """DIMER pipeline for PixArt-Σ XL-2 512-MS: verified snapshots, text-to-image generation, held-out denoising-loss
 evaluation, CLIP-scored generations, and bounded LoRA fine-tuning with a portable adapter."""
 
-from .metrics import ClipScorer, real_photo_baseline, score_generations
+from .metrics import (
+    REAL_PHOTO_REFERENCE_KIND,
+    REAL_PHOTO_REFERENCE_READING,
+    ClipScorer,
+    real_photo_baseline,
+    real_photo_reference,
+    score_generations,
+)
 from .pipeline import (
     BASE_ID,
     BASE_KEY,
@@ -54,6 +61,7 @@ from .samples import (
     CAPTION_TEMPLATE,
     CORPUS_BASE_URL,
     CORPUS_LICENSE,
+    MIN_BYOD_IMAGES,
     SAMPLE_LABEL_SOURCE,
     SAMPLE_RECORDS,
     SAMPLE_SPLIT,
@@ -62,6 +70,7 @@ from .samples import (
     caption_for,
     check_split_disjoint,
     dataset_manifest,
+    duplicate_images,
     fetch_corpus,
     fetch_sample_dataset,
     load_byod_dataset,
@@ -126,6 +135,11 @@ __all__ = [
     "preprocess_image",
     "read_corpus",
     "real_photo_baseline",
+    "real_photo_reference",
+    "MIN_BYOD_IMAGES",
+    "duplicate_images",
+    "REAL_PHOTO_REFERENCE_KIND",
+    "REAL_PHOTO_REFERENCE_READING",
     "sample_prompts",
     "score_generations",
     "split_dataset",

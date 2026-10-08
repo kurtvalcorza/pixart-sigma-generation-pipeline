@@ -186,3 +186,24 @@ def test_artifact_round_trip_and_refusals(tmp_path, monkeypatch):
         plain.load_artifact(out)
     digest = hashlib.sha256((out / pl.ARTIFACT_WEIGHTS_NAME).read_bytes()).hexdigest()
     assert digest == json.loads((out / pl.ARTIFACT_MANIFEST_NAME).read_text())["files"][0]["sha256"]
+
+
+def test_reset_adapter_returns_to_the_pretrained_base_and_a_second_adapt_starts_from_it(monkeypatch):
+    """PX-M3 / PX-m6: a second pass (BYOD or an experiment) after an adaptation scores the pretrained model as frozen
+    and trains from B = 0; without the reset, adapt() refuses instead of continuing from the trained adapter."""
+    pipe = _pipeline(monkeypatch)
+    names = set(lora_parameter_names(pipe.transformer))
+    pipe._lora_init = {k: v.detach().clone() for k, v in pipe.transformer.state_dict().items() if k in names}
+    train, val = synthetic_records(6), synthetic_records(2, seed=50)
+    frozen = pipe.evaluate(val, seed=0)["denoising_mse"]
+    assert pipe.reset_adapter() is False  # nothing to reset yet
+    pipe.adapt(train, val, epochs=2, lr=1e-2, seed=0)
+    assert pipe.evaluate(val, seed=0)["adapted"] is True
+    with pytest.raises(ValueError, match="already carries a trained adapter.*reset_adapter"):
+        pipe.adapt(train, val, epochs=1, lr=1e-2, seed=0)
+    assert pipe.reset_adapter() is True and pipe.adapter is None
+    after_reset = pipe.evaluate(val, seed=0)
+    assert after_reset["adapted"] is False and after_reset["denoising_mse"] == frozen
+    assert all(torch.equal(pipe._lora_init[k], v) for k, v in pipe.transformer.state_dict().items() if k in names)
+    second = pipe.adapt(train, val, epochs=1, lr=1e-2, seed=0)
+    assert second["history"][0]["val_loss"] == frozen and second["history"][0]["note"].startswith("frozen model")
