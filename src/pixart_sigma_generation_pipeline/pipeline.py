@@ -432,6 +432,9 @@ class PixArtSigmaPipeline:
     adapter: dict[str, Any] | None = None
     _text_encoder: Any = field(default=None, repr=False)
     _prompt_cache: dict[str, Any] = field(default_factory=dict, repr=False)
+    # The LoRA tensors as `peft` initialised them (B = 0, so the pipeline is the pretrained model), on the CPU; kept so
+    # `reset_adapter` can return an adapted pipeline to the pretrained base without reloading anything.
+    _lora_init: dict[str, Any] | None = field(default=None, repr=False)
 
     @classmethod
     def from_pretrained(
@@ -465,6 +468,10 @@ class PixArtSigmaPipeline:
             param.requires_grad_(False)
         scheduler = DPMSolverMultistepScheduler.from_pretrained(str(base), subfolder="scheduler")
         tokenizer = AutoTokenizer.from_pretrained(str(base / "tokenizer"))
+        lora_init = None
+        if use_lora:
+            names = set(lora_parameter_names(transformer))
+            lora_init = {k: v.detach().to("cpu").clone() for k, v in transformer.state_dict().items() if k in names}
         return cls(
             transformer=transformer,
             vae=vae,
@@ -477,6 +484,7 @@ class PixArtSigmaPipeline:
             base_dir=base,
             source="local-snapshot (three manifests verified; safetensors only)",
             use_lora=use_lora,
+            _lora_init=lora_init,
         )
 
     # ---- prompts ---------------------------------------------------------------------------------------
@@ -495,8 +503,11 @@ class PixArtSigmaPipeline:
         enc_dtype = torch.float16 if enc_device.startswith("cuda") else torch.float32
         if self._text_encoder is None:
             started = time.perf_counter()
-            encoder = T5EncoderModel.from_pretrained(str(self.text_encoder_dir), torch_dtype=enc_dtype)
-            self._text_encoder = encoder.to(enc_device).eval()
+            # The shards are float32 (19 GB). Without device_map, from_pretrained converts the whole T5-XXL to float16 in
+            # host RAM first (about 9.5 GB), which a 12.7 GiB Colab VM cannot hold beside the runtime; device_map converts
+            # and moves one tensor at a time.
+            encoder = T5EncoderModel.from_pretrained(str(self.text_encoder_dir), torch_dtype=enc_dtype, device_map=enc_device)
+            self._text_encoder = encoder.eval()
             load_seconds = round(time.perf_counter() - started, 1)
         else:
             load_seconds = 0.0
@@ -555,6 +566,27 @@ class PixArtSigmaPipeline:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         return had
+
+    def reset_adapter(self) -> bool:
+        """Return the pipeline to the pretrained base: overwrite every LoRA tensor with the value `peft` gave it at
+        construction (B = 0, so the adapter adds nothing) and forget the trained adapter. Returns whether an adapter
+        was reset. A re-run of the frozen baseline or of `adapt` after an earlier adaptation starts from here, so a
+        "frozen" number is never read from an adapted model."""
+        if self.adapter is None:
+            return False
+        if self._lora_init is None:
+            raise ValueError("this pipeline was not built with use_lora=True and has no LoRA initialisation to restore")
+        state = self.transformer.state_dict()
+        if set(self._lora_init) != set(lora_parameter_names(self.transformer)):
+            raise ValueError("the transformer's LoRA tensors no longer match the ones recorded at construction")
+        merged = dict(state)
+        merged.update({k: v.to(state[k].device, state[k].dtype) for k, v in self._lora_init.items()})
+        self.transformer.load_state_dict(merged, strict=True)
+        self.transformer.eval()
+        for param in self.transformer.parameters():
+            param.requires_grad_(False)
+        self.adapter = None
+        return True
 
     def _embeds(self, prompt: str) -> tuple[Any, Any]:
         if prompt not in self._prompt_cache:
@@ -739,6 +771,11 @@ class PixArtSigmaPipeline:
         validation denoising MSE is kept."""
         if not self.use_lora:
             raise ValueError("adapt() needs a pipeline built with use_lora=True")
+        if self.adapter is not None:
+            raise ValueError(
+                "this pipeline already carries a trained adapter, and adapt() would continue from it and record the adapted "
+                "model as epoch 0; call reset_adapter() first so training starts from the pretrained base (B = 0)"
+            )
         if not isinstance(epochs, int) or not 1 <= epochs <= 50:
             raise ValueError("epochs must be an int in 1..50")
         if not (0.0 < lr <= 1e-2):
