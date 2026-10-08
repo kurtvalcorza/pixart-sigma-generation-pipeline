@@ -1,6 +1,6 @@
 """Static release-asset validation for the PixArt-Σ 512-MS text-to-image DIMER pipeline.
 
-Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.0 §4), the tutorial
+Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.2 §4), the tutorial
 registry, model card, README, STATUS.md and weight documentation for source conformance and
 cross-document identity consistency, and runs the generator parity checks (PAR1-PAR3).
 
@@ -48,21 +48,42 @@ CODE_MARKERS = (
     # Stage 4: pinned photographs, seeded splits, dataset manifest, sample CSV, refusal probes
     "USE_BYOD = False",
     "splits = fetch_sample_dataset(cache_dir='weights/inat-birds')",
-    "splits = split_dataset(load_byod_dataset(byod_path), seed=0)",
+    "byod_records = load_byod_dataset(byod_path)",
+    "splits = split_dataset(byod_records, seed=0)",
     "dataset_report = dataset_manifest(",
-    "write_dataset_csv(test_records, 'outputs/pixart_sigma_generation_sample_captions.csv')",
+    "captions_csv = 'outputs/pixart_sigma_generation_sample_captions.csv'",
+    "write_dataset_csv(test_records, captions_csv)",
     "validate_dataset(records)",
+    # PX-m1: a path field, a cancelled upload named, duplicates reported, BYOD written under its own name
+    "BYOD_PATH = ''",
+    "if len(uploaded) != 1:",
+    "duplicates = duplicate_images(byod_records)",
+    "captions_csv = 'outputs/pixart_sigma_generation_byod_captions.csv'",
     # Stage 5: prompts encoded once, encoder released
     "encode_report = pipe.encode_prompts(all_prompts)",
     "released = pipe.release_text_encoder()",
-    # Stage 6: frozen held-out denoising loss, CLIP-scored generations, real-photo ceiling
+    # PX-M3: the GPU residents of an earlier pass are released before the encoder loads
+    "def release_gpu_residents():",
+    "released_before_encoding = release_gpu_residents()",
+    # PX-M3 / PX-m6: Sections 6, 7 and 10 start from the pretrained base
+    "def reset_to_pretrained():",
+    "pipe.reset_adapter()",
+    # Stage 6: frozen held-out denoising loss, CLIP-scored generations, leave-one-out real-photo reference
     "frozen_test = pipe.evaluate(test_records, seed=EVAL_SEED)",
     "frozen_generation = pipe.generate(generation_prompts, seed=1000, steps=STEPS, guidance_scale=GUIDANCE_SCALE)",
     "frozen_scores = score_generations(scorer, frozen_generation['images'], references=test_records)",
-    "real_ceiling = real_photo_baseline(scorer, test_records)",
+    # PX-M2: the real photographs are a leave-one-out reference line, not a ceiling
+    "real_reference = real_photo_reference(scorer, test_records)",
+    "'real_photo_reference': real_reference",
+    # PX-m1: a bounded number of generation prompts, with a warning
+    "generation_prompts = [p for p in prompts[:MAX_GENERATION_PROMPTS] for _ in range(IMAGES_PER_PROMPT)]",
+    # PX-m5: the images are displayed inline
+    "display(Image.open(frozen_grid))",
+    "display(Image.open(pair_grid))",
     # Stage 7: bounded LoRA fine-tuning
     "adapt_result = pipe.adapt(",
     "lr=LEARNING_RATE",
+    "if pipe.adapter is None:",
     "batch_size=BATCH_SIZE",
     # Stage 8: paired held-out comparison and the assertion
     "adapted_test = pipe.evaluate(test_records, seed=EVAL_SEED)",
@@ -75,6 +96,12 @@ CODE_MARKERS = (
     "reloaded = PixArtSigmaPipeline.from_artifact(artifact_dir, weights_dir=WEIGHTS_DIR, base_dir=BASE_WEIGHTS_DIR, device=pipe.device)",
     "reloaded.import_prompt_cache(pipe.export_prompt_cache())",
     "assert parity['denoising_mse_diff'] < 1e-6 and parity['mean_abs_pixel_diff'] < 1.0",
+    # PX-M3: the reloaded pipeline is released after the parity check
+    "del reloaded",
+    # the carried modules' per-file SHA-256 travel with the source revision
+    "'module_sha256_per_file': NOTEBOOK_SOURCE['module_sha256_per_file']",
+    # PX-M4: the change-one-thing activity, off by default
+    "RUN_ACTIVITY = False",
     "'safetensors_only': True",
     "'remote_code_executed': False",
     "'data_base_url': CORPUS_BASE_URL",
@@ -85,11 +112,50 @@ MARKDOWN_MARKERS = (
     "does not fit beside a training graph",
     "Generation has no ground",
     "denoising loss",
-    "real-photo ceiling",
+    "reference line, not a ceiling",
+    "leave-one-out",
+    "**Pretraining overlap.**",
+    "**Run-to-run variability.**",
+    "stratified within each caption",
+    "**The split assumes independent photographs.**",
     "not a human judgement",
     "Open RAIL++-M",
     "sample-sanity",
     "CC0",
+)
+# Learner-facing text the review fixes removed; it must not come back (PX-M1 restart-dependent install, PX-M2 the
+# real-photo "ceiling", PX-m1 the wrong BYOD minimum, PX-m2 the split wording, PX-m4 stale expectations and a pre-stated
+# result).
+STALE_MARKDOWN = (
+    "Restart the runtime, then rerun",
+    "installs the pinned dependencies",
+    "re-run from that cell",
+    "real-photo ceiling",
+    "the ceiling these numbers could reach",
+    "at least four images",
+    "split by caption",
+    "Hold out by caption",
+    "below the real photographs' 1.0",
+    "higher reference similarity and label accuracy",
+    "That is the claim",
+    "Successful execution proves that the recorded repository revision",
+)
+# The guided layer (NOTEBOOK_SPEC 2.2 §3.5, GDL1-GDL14; review PX-M4): each marker with its minimum count.
+GUIDED_MARKERS = (
+    ("**Who this is for.**", 1),
+    ("**Input → Model → Output.**", 1),
+    ("**How to use this notebook.**", 1),
+    ("**Roadmap:**", 1),
+    ("**Predict before running:**", 6),
+    ("**What to notice (Section", 7),
+    ("<summary>Check your reasoning</summary>", 7),
+    ("## 10. Your turn — change one thing", 1),
+    ("**Predict → Change one thing → Run → Observe → Explain.**", 1),
+    ("## Troubleshooting", 1),
+    ("## Glossary", 1),
+    ("## Conclusion (your notes)", 1),
+    ("> **Infrastructure.**", 3),
+    ("**Next experiments**", 1),
 )
 # Direct-library use that must stay inside the carried module cells (G2).
 FORBIDDEN_OUTSIDE_MODULE = (
@@ -118,10 +184,10 @@ FORBIDDEN_OUTSIDE_MODULE = (
 # ---------------------------------------------------------------------------
 # Shared checks. Everything below is source/structure validation only. Passing
 # these checks is NOT clean-runtime execution evidence under DIMER Notebook
-# Specification 2.0; see docs/release-verification.md for the release gate.
+# Specification 2.2; see docs/release-verification.md for the release gate.
 # ---------------------------------------------------------------------------
 
-NOTEBOOK_SPEC = "2.0"
+NOTEBOOK_SPEC = "2.2"
 ALLOWED_PROFILES = {"E2E", "ARTIFACT-INFERENCE", "TASK-INFERENCE", "MULTI-CAPABILITY", "SMOKE"}
 STATUS_TOKENS = ("Candidate", "Release-grade")
 PLACEHOLDER = re.compile(r"\b(TODO|TBD|FIXME)\b|Insert text here|Tooltip:", re.I)
@@ -190,7 +256,7 @@ COMMON_MARKDOWN_MARKERS = (
     "## 2. Pipeline code (carried verbatim from",
     "## 3. Pin, stage and verify the model",
     "## Interpretation and limits",
-    "Successful execution proves that the recorded repository revision",
+    "A successful default run **proves** that",
     "without the repository being",
     "It does **not** establish benchmark superiority",
     "## References",
@@ -454,6 +520,14 @@ def _validate_notebook_structure(path: Path, notebook: dict) -> tuple[list[tuple
         f"{path.name}: generated_from.module_sha256 does not match src/ (PAR4: regenerate the notebook)",
     )
     _check(bool(generated.get("generator")), f"{path.name}: generated_from.generator is required")
+    _check(
+        not str(generated.get("revision", "")).endswith("+working-tree"),
+        f"{path.name}: generated_from.revision is a working-tree label; commit the package modules, then regenerate",
+    )
+    _check(
+        generated.get("module_sha256_per_file") == {f"{_template.get('package_dir', f'src/{PACKAGE}')}/{m}": hashlib.sha256(_read(_pkg_dir / m).encode("utf-8")).hexdigest() for m in _order},
+        f"{path.name}: generated_from.module_sha256_per_file does not match src/ (regenerate the notebook)",
+    )
     cells = notebook.get("cells", [])
     _check(
         bool(cells) and cells[0].get("cell_type") == "markdown",
@@ -542,8 +616,13 @@ def _validate_embedded_modules(path: Path, notebook: dict, build) -> list[int]:
             cell["metadata"]["dimer"].get("module_sha256") == context["per_module_sha256"][rel],
             f"{path.name}: cell {index} module_sha256 tag does not match {rel}",
         )
+        # PX-M4: a carried cell is the module plus the generator's one Infrastructure title line, collapsed.
         _check(
-            _cell_source(cell).rstrip("\n") + "\n" == context["embedded"][module],
+            _cell_source(cell).startswith(build.CARRIED_TITLE_PREFIX) and cell.get("metadata", {}).get("cellView") == "form",
+            f"{path.name}: carried module cell {index} must start with the generator's Infrastructure title and be collapsed (cellView: form)",
+        )
+        _check(
+            build.strip_carried_title(_cell_source(cell)).rstrip("\n") + "\n" == context["embedded"][module],
             f"{path.name}: embedded module cell {index} differs from {rel} (PAR1); regenerate the notebook",
         )
     return [index for index, _ in tagged]
@@ -610,8 +689,21 @@ def _validate_notebook_content(
     _check(not missing, f"{path.name}: missing required source markers: {missing}")
     present = [label for label, pattern in FORBIDDEN_PATTERNS if pattern.search(code)]
     _check(not present, f"{path.name}: forbidden/insecure source: {present}")
-    leaked = [marker for marker in FORBIDDEN_OUTSIDE_MODULE if marker in outside]
+    # The two kernel cells (PX-M1) download the pinned uv wheel themselves; every learner cell is still checked.
+    kernel_cells = {index for index, source, _tree in code_cells if "# dimer: kernel cell" in source}
+    learner = "\n".join(text for index, text in stripped.items() if index not in embedded and index not in kernel_cells)
+    leaked = [marker for marker in FORBIDDEN_OUTSIDE_MODULE if marker in learner]
     _check(not leaked, f"{path.name}: direct library use outside the carried module cell (G2): {leaked}")
+    # PX-M1: exactly two kernel cells (the isolated install and the router); everything else runs in the uv environment.
+    kernel_raw = [source for _index, source, _tree in code_cells if "# dimer: kernel cell" in source]
+    _check(len(kernel_raw) == 2, f"{path.name}: exactly two kernel cells (isolated install and router) are expected (PX-M1)")
+    install = next((k for k in kernel_raw if "LOCK_TEXT = r" in k), "")
+    for needed in ('"--managed-python"', '"--require-hashes"', '"--only-binary"', '":all:"', "UV_SHA256", "LOCK_SHA256", 'platform.machine() != "x86_64"'):
+        _check(needed in install, f"{path.name}: the isolated install cell must use {needed} (PX-M1)")
+    _check("_ip.input_transformers_cleanup.append(_route_to_isolated_runtime)" in "\n".join(kernel_raw), f"{path.name}: later cells must be routed to the isolated environment (PX-M1)")
+    _check("module.__spec__ = importlib.machinery.ModuleSpec(name, None, is_package=package)" in "\n".join(kernel_raw), f"{path.name}: the worker's google.colab stubs must carry a module spec")
+    titled = sum(1 for _index, source, _tree in code_cells if source.startswith("# @title Infrastructure:"))
+    _check(titled == 7, f"{path.name}: install, router, runtime, three carried-module and model cells must carry an Infrastructure title (PX-M4), found {titled}")
     _check(
         f"pipe = {MODEL_LOAD_EXPR}" in outside,
         f"{path.name}: must load through {MODEL_LOAD_EXPR} (INF1)",
@@ -622,6 +714,14 @@ def _validate_notebook_content(
         _check(filename in code, f"{path.name}: must export {filename}")
     missing_md = [marker for marker in COMMON_MARKDOWN_MARKERS + MARKDOWN_MARKERS if marker not in markdown]
     _check(not missing_md, f"{path.name}: missing learner-facing markers: {missing_md}")
+    stale = [marker for marker in STALE_MARKDOWN if marker in markdown]
+    _check(not stale, f"{path.name}: stale learner-facing text: {stale}")
+    _check("{{" not in markdown and "}}" not in markdown, f"{path.name}: markdown must not show doubled braces (PX-m4)")
+    short = [(marker, markdown.count(marker), least) for marker, least in GUIDED_MARKERS if markdown.count(marker) < max(least, 1)]
+    _check(not short, f"{path.name}: guided layer incomplete (marker, found, needed): {short}")
+    # PX-M2: "ceiling" is used only to say the real photographs are NOT one (or for the package's operational limits).
+    loose = [m.start() for m in re.finditer(r"ceiling", markdown) if not markdown[: m.start()].endswith("not a ") and not markdown[: m.start()].endswith("operational ")]
+    _check(not loose, f"{path.name}: markdown calls something a ceiling ({len(loose)} place(s)); the real photographs are a reference line, not a ceiling (PX-M2)")
     _check(f"**Profile:** `{EXPECTED_PROFILE}`" in markdown, f"{path.name}: markdown must state the profile")
     _check(f"https://huggingface.co/{model_id}" in markdown, f"{path.name}: references must link {model_id}")
 
