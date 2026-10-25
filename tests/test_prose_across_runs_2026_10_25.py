@@ -27,5 +27,5 @@ def test_values_that_moved_are_given_per_run():
     md = _markdown()
     assert "rose from 65.57 to 69.27, 68.22 and 68.88" in md
     assert "but stayed at 0.50 in the Colab T4 run of blob `adef085a`" in md
-    assert "Dark-eyed Junco 62.12 → 61.67 and 60.99" in md
-    assert "1,140.3 s for blob `4cf243c1` on 2026-10-08 and 1,118.9 s for blob `adef085a` on 2026-10-25" in md
+    assert "Dark-eyed Junco 62.12 → 61.67, 60.99 and 60.74" in md
+    assert "1,140.3 s for blob `4cf243c1` on 2026-10-08, 1,118.9 s for blob `adef085a`" in md
