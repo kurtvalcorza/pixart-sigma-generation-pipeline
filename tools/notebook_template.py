@@ -421,11 +421,10 @@ TEMPLATE = {
         "(4 epochs over 36 images), scores the adapted model on identical inputs, renders a new prompt, exports the adapter as "
         "safetensors with a manifest, reloads that artifact into a fresh pipeline to verify generation parity, and releases "
         "the reloaded pipeline. The default path needs no repository clone, no DIMER worker or service, no credential, no "
-        "upload dialog and no configuration edit (NOTEBOOK_SPEC 2.2 §5). Measured times come from the previous notebook "
-        "version, whose model stages are the same: a Kaggle Tesla T4 run took 1,380 s of cell time (2026-09-19) — 826 s "
-        "staging the 22 GB of snapshots and about 9 minutes for Sections 4–9 — with a pinned in-kernel install this version "
-        "no longer does. Building the isolated environment (PyTorch with its CUDA libraries) comes on top and usually takes a "
-        "few minutes (an estimate; no run of this version is recorded yet)."
+        "upload dialog and no configuration edit (NOTEBOOK_SPEC 2.2 §5). Measured times: on a fresh Colab T4 this version takes about 19 minutes of session wall, including the isolated "
+        "environment build and the downloads (1,140.3 s for blob `4cf243c1` on 2026-10-08 and 1,118.9 s for blob `adef085a` on 2026-10-25). "
+        "The previous notebook version, whose model stages are the same, took 1,380 s of cell time on a Kaggle Tesla T4 (2026-09-19) — 826 s "
+        "staging the 22 GB of snapshots and about 9 minutes for Sections 4–9 — with a pinned in-kernel install this version no longer does."
     ),
     "byod": (
         "After the tutorial workflow completes, set `USE_BYOD = True` in Section 4, select that cell and choose **Runtime → Run "
