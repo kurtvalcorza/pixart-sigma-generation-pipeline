@@ -528,7 +528,7 @@ def test_expectations_match_the_record_and_the_conclusion_is_conditional(nb: dic
     assert "Read your own Section 8 before concluding" in md
     assert "**Pretraining overlap.**" in md and "**Run-to-run variability.**" in md
     # Tier C T66-1: the Section 8 answer quotes the Colab T4 run of blob 4cf243c1.
-    assert "American Goldfinch 80.33 → 74.82" in md and "label accuracy moved from 0.50 to 0.58" in md
+    assert "American Goldfinch 80.33 → 74.82 and 75.56" in md and "it moved from 0.50 to 0.58" in md
     assert "{{" not in md and "}}" not in md and "`{id, image, caption}`" in md
 
 

@@ -64,6 +64,8 @@ BADGES = [
 # quoted only where the hosted run printed no matching number.
 RECORD = "the recorded Colab T4 run of blob `4cf243c1` (commit `a61c09b`, 8 October 2026, not re-run here)"
 OLD_RECORD = "the Kaggle T4 run of the earlier blob `99829b51` (19 September 2026, not re-run here)"
+BOTH = "both recorded Colab T4 runs (blob `4cf243c1`, 8 October 2026, and blob `adef085a`, 25 October 2026)"
+B2 = "the Colab T4 run of blob `adef085a` (25 October 2026)"
 
 _DATA_CODE = _py(
     """import json
@@ -610,7 +612,7 @@ TEMPLATE = {
                 "**What to notice (Section 5):** the memory with the encoder loaded and after the release. On a re-run, the "
                 "`released_before_encoding` line lists what an earlier pass had left on the GPU.\n\n"
                 "<details><summary>Check your reasoning</summary>In "
-                + RECORD
+                + BOTH
                 + " the GPU held 13.13 GB with the encoder loaded and 1.59 GB after the release — the float16 transformer with "
                 "its LoRA, the float32 VAE and allocator overhead; the eight prompts' embeddings are on the CPU. A training graph "
                 "and the CLIP scorer would not have fitted beside those 13 GB on a 15 GB T4.</details>\n\n"
@@ -648,7 +650,7 @@ TEMPLATE = {
                 "**What to notice (Section 6):** the frozen generations next to the real-photo reference line, metric by metric, "
                 "and the per-species rows: which birds did CLIP name correctly, against a chance level of 1 in 6?\n\n"
                 "<details><summary>Check your reasoning</summary>Below on prompt similarity, above on reference similarity. In "
-                + RECORD
+                + BOTH
                 + " the frozen generations scored prompt similarity 26.79 against the real photographs' 30.25, but reference "
                 "similarity 65.57 against a leave-one-out real-photo value of 57.72; label accuracy was 0.50 (chance 0.17) against "
                 "the real photos' 0.917. " + OLD_RECORD[0].upper() + OLD_RECORD[1:] + " printed "
@@ -666,9 +668,9 @@ TEMPLATE = {
                 "or `LEARNING_RATE` trains again from the pretrained base (`adapt` refuses to continue from an already trained "
                 "adapter).\n\n"
                 "Watch the validation denoising MSE from epoch 0; four epochs over 36 images (144 steps) took about two minutes on "
-                "a T4 in "
-                + RECORD
-                + ". The training loss is a noisy per-step average over random timesteps and is not the quality signal — the "
+                "a T4 (119.9 s and 112.6 s in "
+                + BOTH
+                + "). The training loss is a noisy per-step average over random timesteps and is not the quality signal — the "
                 "paired held-out numbers in Section 8 are.\n\n"
                 "**Predict before running:** will the validation loss fall at every epoch? Will the training loss?"
             ),
@@ -678,14 +680,14 @@ TEMPLATE = {
             "md": (
                 "## 8. Held-out evaluation: the paired comparison\n\n"
                 "**What to notice (Section 7):** the validation loss per epoch, the kept epoch and the size of the change.\n\n"
-                "<details><summary>Check your reasoning</summary>In "
-                + RECORD
-                + " the validation loss fell at every epoch (0.109093 → 0.108991 → 0.108946 → 0.108929 → 0.108927) and "
-                "epoch 4 was kept, while the training loss went 0.115 → 0.161 → 0.070 → 0.085: up, down, up. Each training step "
+                "<details><summary>Check your reasoning</summary>Read the epoch lines printed above. In "
+                + BOTH
+                + " the validation loss fell at every epoch (0.109093 → 0.108991 → 0.108946 → 0.108929 → 0.108927 in the first, 0.109093 → 0.108994 → 0.108949 → 0.108930 → 0.108926 in the second) and "
+                "epoch 4 was kept (" + OLD_RECORD + " kept epoch 3), while the training loss went 0.115 → 0.161 → 0.070 → 0.085 in both: up, down, up. Each training step "
                 "draws its own random timestep, and the loss depends strongly on it (Section 6 prints the per-timestep loss: about "
                 "0.36 at t = 100 and 0.0002 at t = 900), so a per-epoch training average is noisy; the validation loss uses the "
                 "same fixed noise every time and is the signal used to choose the epoch. Note how small the change is: about 0.1 % "
-                "of the frozen value. Training took 119.9 s.</details>\n\n"
+                "of the frozen value. Training took 119.9 s and 112.6 s.</details>\n\n"
                 "The test photographs were never used for training or epoch selection. The adapted model is scored exactly as "
                 "the frozen model was in Section 6 — the same seed, so the same latents, noise and timesteps, and the same "
                 "prompt/seed pairs for generation — and the table puts the frozen, the adapted and the real-photo reference numbers "
@@ -705,12 +707,12 @@ TEMPLATE = {
                 "## 9. A new prompt, artifact export and fresh reload\n\n"
                 "**What to notice (Section 8):** the per-species rows, not only the means — and whether the bottom row of the "
                 "side-by-side grid looks more like the photographs of each species than the top row.\n\n"
-                "<details><summary>Check your reasoning</summary>Not every one. In "
-                + RECORD
-                + " the test denoising MSE fell from 0.105983 to 0.105811 (−0.000172, about 0.16 %) and was lower at all five "
-                "timesteps; the mean reference similarity rose from 65.57 to 69.27 and prompt similarity from 26.79 to 28.40; "
-                "label accuracy moved from 0.50 to 0.58, one of twelve images (in " + OLD_RECORD + " it stayed at 0.50), and two "
-                "of the six printed rows moved the other way (American Goldfinch 80.33 → 74.82, Dark-eyed Junco 62.12 → 61.67). With two images per species and one seed, a single image can move a "
+                "<details><summary>Check your reasoning</summary>Not every one. Read the comparison and per-species rows printed above. In "
+                + BOTH
+                + " the test denoising MSE fell from 0.105983 to 0.105811 and 0.105809 (−0.000172 and −0.000174, about 0.16 %) and was lower at all five "
+                "timesteps; the mean reference similarity rose from 65.57 to 69.27 and 68.22 and prompt similarity from 26.79 to 28.40 and 28.02 "
+                "(" + OLD_RECORD + ": 68.95 and 28.01). Label accuracy is the least stable reading: it moved from 0.50 to 0.58, one of twelve images, in the first Colab run but stayed at 0.50 in " + B2 + " and in " + OLD_RECORD + ". In both Colab runs the same two "
+                "of the six printed rows moved the other way (American Goldfinch 80.33 → 74.82 and 75.56, Dark-eyed Junco 62.12 → 61.67 and 60.99). With two images per species and one seed, a single image can move a "
                 "species' number either way; the paired loss on 12 photographs at five timesteps is the steadier evidence, and "
                 "even it changed by a fraction of a percent.</details>\n\n"
                 "The adapted model renders `NEW_PROMPT` — a composition that appears in no training caption — at two seeds; the "
@@ -737,10 +739,10 @@ TEMPLATE = {
                 "**What to notice (Section 9):** the reload parity line, the GPU memory with the reloaded pipeline and after its "
                 "release, and the list of files under `outputs/`.\n\n"
                 "<details><summary>Check your reasoning</summary>Exactly, on the same runtime. In "
-                + RECORD
+                + BOTH
                 + " both differences were 0.0: the same bytes, the same embeddings and the same kernels give the same arithmetic. "
                 "On a different GPU, driver or library build the numbers would differ slightly, which is why parity is checked in "
-                "one session. Releasing the reloaded pipeline brought GPU memory back from 3.8 GB to 2.22 GB in that run.</details>\n\n"
+                "one session. Releasing the reloaded pipeline brought GPU memory back from 3.8 GB to 2.22 GB in both runs.</details>\n\n"
                 "**Predict → Change one thing → Run → Observe → Explain.**\n\n"
                 "1. **Predict:** classifier-free guidance runs the transformer twice per step — with the prompt and with the empty "
                 "negative prompt — and pushes the prediction away from the unconditioned one by the guidance scale. With guidance "
