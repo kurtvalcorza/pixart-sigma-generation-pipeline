@@ -536,7 +536,7 @@ TEMPLATE = {
     ),
     "prerequisites": [
         "- **Learner:** basic Python and PyTorch; what a train/validation/test split protects against. The notebook explains latent diffusion, noise prediction, timesteps, the denoising loss, classifier-free guidance, the VAE, LoRA, CLIP scores, the leave-one-out reference and reload parity where they are first used; the Glossary repeats them.",
-        "- **Runtime:** a fresh **Linux x86_64 GPU** runtime — Google Colab T4 or better, Kaggle, or a Linux Jupyter server with a CUDA GPU of at least 15 GB. Section 1 builds its own Python 3.12.12 environment from a hash-locked list of manylinux wheels, so the kernel's own Python version does not matter, and a Windows or macOS kernel is not supported (Section 1 stops with that message). The T5-XXL encoder runs in float16 (9.5 GB) while it encodes prompts and is then released; the transformer runs in float16 (1.2 GB) with the LoRA parameters in float32; the SDXL VAE stays in float32 (0.33 GB). CPU-only runtimes are not supported for this notebook: the encoder would need 19 GB of RAM in float32 and the diffusion steps take minutes per image. **Disk:** about 25 GB for the three snapshots plus several GB for the isolated environment (PyTorch with its CUDA libraries). **Host RAM:** the T5-XXL encoder streams its weights to the GPU one tensor at a time (`device_map`), so a standard Colab VM (12.7 GiB) is meant to be enough; this notebook has not yet been run on Colab.",
+        "- **Runtime:** a fresh **Linux x86_64 GPU** runtime — Google Colab T4 or better, Kaggle, or a Linux Jupyter server with a CUDA GPU of at least 15 GB. Section 1 builds its own Python 3.12.12 environment from a hash-locked list of manylinux wheels, so the kernel's own Python version does not matter, and a Windows or macOS kernel is not supported (Section 1 stops with that message). The T5-XXL encoder runs in float16 (9.5 GB) while it encodes prompts and is then released; the transformer runs in float16 (1.2 GB) with the LoRA parameters in float32; the SDXL VAE stays in float32 (0.33 GB). CPU-only runtimes are not supported for this notebook: the encoder would need 19 GB of RAM in float32 and the diffusion steps take minutes per image. **Disk:** about 25 GB for the three snapshots plus several GB for the isolated environment (PyTorch with its CUDA libraries). **Host RAM:** the T5-XXL encoder streams its weights to the GPU one tensor at a time (`device_map`), so a standard Colab VM (12.7 GiB) is meant to be enough.",
         "- **Knowledge:** what a latent diffusion model does at inference (noise → latent → image), what classifier-free guidance is, what a LoRA adapter changes and what it does not, and why a training loss is not a quality score. Each is explained again where it is used.",
         "- **Weights:** the transformer, the T5-XXL encoder, the SDXL VAE and the CLIP scorer are all safetensors; nothing is unpickled and no Hub-hosted code is executed — the model classes come from `diffusers`, `transformers` and `peft` on PyPI. The Σ weights are released under the CreativeML Open RAIL++-M licence, which carries use-based restrictions; the scorer is MIT.",
         "- **Data contract:** a record is `{id, image, caption}` — an RGB image with shorter side 256..4096 px (resized so the shorter side is 512 px and centre-cropped to 512 × 512; the crop is reported) and a caption of 1..1000 characters (truncated to 300 T5 tokens; truncations are reported). Validation is structural: nothing checks that a caption describes its image or that the model can render it.",
@@ -636,7 +636,7 @@ TEMPLATE = {
                 "photograph with its own background and pose, and each generation is compared with the mean of the two test photos "
                 "while each real photo is compared with one. Only label accuracy reads naturally as a target, because the captions "
                 "describe exactly these photographs.\n\n"
-                "Look for: a denoising MSE around 0.1..0.3, label accuracy at or below the real photographs', and the first grid of "
+                "Look for: the denoising MSE, label accuracy at or below the real photographs', and the first grid of "
                 "generated birds displayed below the numbers (also written to `outputs/{stem}_frozen_grid.jpg`).\n\n"
                 "**Predict before running:** on CLIP prompt similarity, will the frozen model's generated birds score above or "
                 "below the real photographs? And on reference similarity?"
@@ -683,8 +683,8 @@ TEMPLATE = {
                 + BOTH
                 + " the validation loss went 0.109093 → 0.108991 → 0.108946 → 0.108929 → 0.108927 in the first, 0.109093 → 0.108994 → 0.108949 → 0.108930 → 0.108926 in the second and 0.109093 → 0.108992 → 0.108945 → 0.108927 → 0.108929 in the third: "
                 "it fell at every epoch in the first two, which kept epoch 4, and rose at epoch 4 in the third, which kept epoch 3 (" + OLD_RECORD + " also kept epoch 3); this can vary between runs. The training loss went 0.115 → 0.161 → 0.070 → 0.085 in all three: up, down, up. Each training step "
-                "draws its own random timestep, and the loss depends strongly on it (Section 6 prints the per-timestep loss: about "
-                "0.36 at t = 100 and 0.0002 at t = 900), so a per-epoch training average is noisy; the validation loss uses the "
+                "draws its own random timestep, and the loss depends strongly on it (compare the per-timestep losses Section 6 printed "
+                "for t = 100 and t = 900), so a per-epoch training average is noisy; the validation loss uses the "
                 "same fixed noise every time and is the signal used to choose the epoch. In those runs the change was small: about 0.15 % "
                 "of the frozen value. Training took 119.9 s, 112.6 s and 111.5 s.</details>\n\n"
                 "The test photographs were never used for training or epoch selection. The adapted model is scored exactly as "
@@ -775,9 +775,7 @@ TEMPLATE = {
         "advance. If the test denoising loss fell and the generations moved towards the held-out photographs for most species, "
         "a LoRA of four million parameters trained for 111.5 s to 119.9 s (the recorded Colab runs) on 36 photographs has taught the diffusion transformer "
         "something about a narrow visual domain from a handful of captioned images, measured on identical inputs before and "
-        "after, and the artifact that carries the change is 16 MB. Check the size and the per-species rows: in the recorded run "
-        "of the previous version the test loss fell by 0.14 %, label accuracy did not change, and two of the six printed "
-        "species rows fell while the mean reference similarity rose.\n\n"
+        "after, and the artifact that carries the change is 16 MB. Check the size and the per-species rows printed above.\n\n"
         "The numbers are sample-sanity evidence. A denoising loss is the training objective, not a quality score; CLIP "
         "similarity and CLIP's nearest-caption vote are a frozen model's opinion, not a human judgement, and CLIP itself has "
         "biases about what a species name looks like; twelve images per model from one seeded run give no dispersion "
