@@ -59,10 +59,11 @@ BADGES = [
     ("Paper", "https://img.shields.io/badge/arXiv-2403.04692-b31b1b.svg", "https://arxiv.org/abs/2403.04692"),
 ]
 
-# Worked answers quote the recorded Kaggle Tesla T4 run of the previous notebook version (blob 99829b51, 2026-09-19):
-# its model stages are this version's, except that it printed the real-photo reference similarity with each photo
-# inside its own reference (88.66); the leave-one-out value 57.7 is derived exactly from that run's per-image numbers.
-RECORD = "the recorded Kaggle T4 run of the previous notebook version (same model stages, 2026-09-19)"
+# Tier C T66-1: worked answers quote the Colab T4 run of blob 4cf243c1 (commit a61c09b, 2026-10-08,
+# docs/execution-evidence/2026-10-08-a61c09b). OLD_RECORD is the Kaggle T4 run of blob 99829b51 (2026-09-19),
+# quoted only where the hosted run printed no matching number.
+RECORD = "the recorded Colab T4 run of blob `4cf243c1` (commit `a61c09b`, 8 October 2026, not re-run here)"
+OLD_RECORD = "the Kaggle T4 run of the earlier blob `99829b51` (19 September 2026, not re-run here)"
 
 _DATA_CODE = _py(
     """import json
@@ -486,7 +487,8 @@ TEMPLATE = {
         "the empty negative prompt — once, keeps the embeddings, and releases the 9.5 GB encoder before anything is trained; "
         "the reloaded pipeline in Section 9 adopts the same embeddings rather than loading it again. **Generation has no ground "
         "truth**, so the notebook reads three kinds of number and says what each is: the held-out *denoising loss* (the "
-        "training objective, measured on photographs the model never trained on, with identical noise for the frozen and the "
+        "training objective, measured on photographs the adaptation never trained on (whether the base model or the CLIP "
+        "scorer saw them is unknown; see **Pretraining overlap** in Section 4), with identical noise for the frozen and the "
         "adapted model), CLIP scores of generated images (prompt alignment, which species CLIP thinks it sees, and closeness to "
         "the held-out real photographs), and the same CLIP scores on the real photographs themselves — a **reference line, not "
         "a ceiling**: each photo is compared with the other held-out photos of its species, never with itself, and generated "
@@ -559,7 +561,9 @@ TEMPLATE = {
                 "is random within each caption and drops only pixel-identical copies.\n\n"
                 "**Pretraining overlap.** These are public iNaturalist photographs. Photographs like them — possibly these "
                 "ones — may be in the web-scale data behind PixArt-Σ and behind the LAION-2B CLIP scorer, so the held-out "
-                "loss and the CLIP readings may be optimistic about how new these photos are to either model.\n\n"
+                "loss and the CLIP readings — including the real-photo reference line — may be optimistic about how new these photos "
+                "are to either model. This is inferred from the data descriptions; no photograph was checked against either "
+                "training set.\n\n"
                 "Look for: 36 / 12 / 12 records, six distinct captions, a shorter side around 300..500 px (every photo is "
                 "centre-cropped to 512²), a written `outputs/{stem}_sample_captions.csv` in the shape BYOD expects, and "
                 "three refusal probes — a missing caption, a 200 px image, a duplicate id — each rejected before the model runs.\n\n"
@@ -578,8 +582,8 @@ TEMPLATE = {
                 "<details><summary>Check your reasoning</summary>One. With two test photos per species and the photo itself "
                 "excluded, each real photo's reference is the single other test photo of its species, so the real-photo reference "
                 "similarity in Section 6 is a cosine between two photographs and swings with how alike those two happen to be. In "
-                + RECORD
-                + " the per-species values range from about 38 to 83 (derived from that run's numbers). The generated images "
+                + OLD_RECORD
+                + " the per-species values range from about 38 to 83 (derived from that run's per-image numbers). The generated images "
                 "are compared with the mean of both test photos, which is a smoother target.</details>\n\n"
                 "`pipe.encode_prompts` loads the T5-XXL encoder from the verified component snapshot (float16 on CUDA, streamed to "
                 "the GPU one tensor at a time), tokenises each distinct prompt to 300 tokens with the pinned SentencePiece model, "
@@ -646,10 +650,10 @@ TEMPLATE = {
                 "<details><summary>Check your reasoning</summary>Below on prompt similarity, above on reference similarity. In "
                 + RECORD
                 + " the frozen generations scored prompt similarity 26.79 against the real photographs' 30.25, but reference "
-                "similarity 65.57 against a leave-one-out real-photo value of 57.7; label accuracy was 0.50 (chance 0.17) against "
-                "the real photos' 0.917 — one White-throated Sparrow photograph sits nearest the Junco caption. That run printed "
+                "similarity 65.57 against a leave-one-out real-photo value of 57.72; label accuracy was 0.50 (chance 0.17) against "
+                "the real photos' 0.917. " + OLD_RECORD[0].upper() + OLD_RECORD[1:] + " printed "
                 "88.66 for the real photos' reference similarity because each photo was then included in its own reference; "
-                "excluding it gives 57.7. So the reference line is not a ceiling: on reference similarity the generations, compared "
+                "this version excludes it. So the reference line is not a ceiling: on reference similarity the generations, compared "
                 "with a two-photo mean, sit above real photographs compared with one other photo.</details>\n\n"
                 "`pipe.adapt` trains the 448 LoRA tensors (rank 8, 4,128,768 parameters — 0.7 % of the transformer) that "
                 "`peft` attached to the query, key, value and output projections of the self- and cross-attention of every "
@@ -676,12 +680,12 @@ TEMPLATE = {
                 "**What to notice (Section 7):** the validation loss per epoch, the kept epoch and the size of the change.\n\n"
                 "<details><summary>Check your reasoning</summary>In "
                 + RECORD
-                + " the validation loss fell or held at every epoch (0.109093 → 0.108999 → 0.108956 → 0.108941 → 0.108941) and "
-                "epoch 3 was kept, while the training loss went 0.115 → 0.161 → 0.070 → 0.085: up, down, up. Each training step "
+                + " the validation loss fell at every epoch (0.109093 → 0.108991 → 0.108946 → 0.108929 → 0.108927) and "
+                "epoch 4 was kept, while the training loss went 0.115 → 0.161 → 0.070 → 0.085: up, down, up. Each training step "
                 "draws its own random timestep, and the loss depends strongly on it (Section 6 prints the per-timestep loss: about "
                 "0.36 at t = 100 and 0.0002 at t = 900), so a per-epoch training average is noisy; the validation loss uses the "
                 "same fixed noise every time and is the signal used to choose the epoch. Note how small the change is: about 0.1 % "
-                "of the frozen value. Training took 115 s.</details>\n\n"
+                "of the frozen value. Training took 119.9 s.</details>\n\n"
                 "The test photographs were never used for training or epoch selection. The adapted model is scored exactly as "
                 "the frozen model was in Section 6 — the same seed, so the same latents, noise and timesteps, and the same "
                 "prompt/seed pairs for generation — and the table puts the frozen, the adapted and the real-photo reference numbers "
@@ -701,12 +705,12 @@ TEMPLATE = {
                 "## 9. A new prompt, artifact export and fresh reload\n\n"
                 "**What to notice (Section 8):** the per-species rows, not only the means — and whether the bottom row of the "
                 "side-by-side grid looks more like the photographs of each species than the top row.\n\n"
-                "<details><summary>Check your reasoning</summary>Not every one, and label accuracy did not move. In "
+                "<details><summary>Check your reasoning</summary>Not every one. In "
                 + RECORD
-                + " the test denoising MSE fell from 0.105983 to 0.105838 (−0.000145, about 0.14 %) and was lower at all five "
-                "timesteps; the mean reference similarity rose from 65.57 to 68.95 and prompt similarity from 26.79 to 28.01, but "
-                "label accuracy stayed at 0.50, and two of the six printed rows moved the other way (American Goldfinch 80.33 → "
-                "76.32, Dark-eyed Junco 62.12 → 61.99). With two images per species and one seed, a single image can move a "
+                + " the test denoising MSE fell from 0.105983 to 0.105811 (−0.000172, about 0.16 %) and was lower at all five "
+                "timesteps; the mean reference similarity rose from 65.57 to 69.27 and prompt similarity from 26.79 to 28.40; "
+                "label accuracy moved from 0.50 to 0.58, one of twelve images (in " + OLD_RECORD + " it stayed at 0.50), and two "
+                "of the six printed rows moved the other way (American Goldfinch 80.33 → 74.82, Dark-eyed Junco 62.12 → 61.67). With two images per species and one seed, a single image can move a "
                 "species' number either way; the paired loss on 12 photographs at five timesteps is the steadier evidence, and "
                 "even it changed by a fraction of a percent.</details>\n\n"
                 "The adapted model renders `NEW_PROMPT` — a composition that appears in no training caption — at two seeds; the "
@@ -736,8 +740,7 @@ TEMPLATE = {
                 + RECORD
                 + " both differences were 0.0: the same bytes, the same embeddings and the same kernels give the same arithmetic. "
                 "On a different GPU, driver or library build the numbers would differ slightly, which is why parity is checked in "
-                "one session. That run did not release the reloaded pipeline; this version does, so the printed memory should fall "
-                "back by about the size of one transformer.</details>\n\n"
+                "one session. Releasing the reloaded pipeline brought GPU memory back from 3.8 GB to 2.22 GB in that run.</details>\n\n"
                 "**Predict → Change one thing → Run → Observe → Explain.**\n\n"
                 "1. **Predict:** classifier-free guidance runs the transformer twice per step — with the prompt and with the empty "
                 "negative prompt — and pushes the prediction away from the unconditioned one by the guidance scale. With guidance "
@@ -872,14 +875,15 @@ TEMPLATE = {
         "- **Uncertainty or failure mode:** which species moved the other way? What did your Section 10 run change?\n"
         "- **Limitations:** what does this run *not* show (see Interpretation and limits)?\n\n"
         "## References\n\n"
-        "- Repository README: https://github.com/kurtvalcorza/pixart-sigma-generation-pipeline/blob/main/README.md\n"
-        "- Repository model card: https://github.com/kurtvalcorza/pixart-sigma-generation-pipeline/blob/main/MODEL_CARD.md\n"
-        "- Weights notes: https://github.com/kurtvalcorza/pixart-sigma-generation-pipeline/blob/main/docs/WEIGHTS.md\n"
-        "- Hugging Face model repository: https://huggingface.co/PixArt-alpha/PixArt-Sigma-XL-2-512-MS (revision `{MODEL_REVISION}`)\n"
-        "- Chen, J., Ge, C., Xie, E., et al. (2024). PixArt-Σ: Weak-to-strong training of diffusion transformer for 4K text-to-image generation. ECCV 2024: https://arxiv.org/abs/2403.04692\n"
-        "- Ho, J., Salimans, T. (2022). Classifier-free diffusion guidance: https://arxiv.org/abs/2207.12598\n"
-        "- Hu, E. J., et al. (2022). LoRA: Low-rank adaptation of large language models. ICLR: https://arxiv.org/abs/2106.09685\n"
-        "- Cherti, M., et al. (2023). Reproducible scaling laws for contrastive language-image learning. CVPR (the LAION CLIP scorer): https://arxiv.org/abs/2212.07143\n"
-        "- DIMER Notebook Specification 2.2 and Model Card Specification 1.1 (fleet specs in the ml-worker repository)\n"
+        "References follow the IEEE style.\n\n"
+        "[1] J. Chen, C. Ge, E. Xie *et al.*, \"PixArt-Σ: Weak-to-strong training of diffusion transformer for 4K text-to-image generation,\" in *Proc. Eur. Conf. Comput. Vis. (ECCV)*, 2024. [Online]. Available: https://arxiv.org/abs/2403.04692\n\n"
+        "[2] J. Ho and T. Salimans, \"Classifier-free diffusion guidance,\" arXiv:2207.12598, 2022. [Online]. Available: https://arxiv.org/abs/2207.12598\n\n"
+        "[3] E. J. Hu *et al.*, \"LoRA: Low-rank adaptation of large language models,\" in *Proc. Int. Conf. Learn. Represent. (ICLR)*, 2022. [Online]. Available: https://arxiv.org/abs/2106.09685\n\n"
+        "[4] M. Cherti *et al.*, \"Reproducible scaling laws for contrastive language-image learning,\" in *Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)*, 2023 (the LAION CLIP scorer). [Online]. Available: https://arxiv.org/abs/2212.07143\n\n"
+        "[5] PixArt-alpha, \"PixArt-alpha/PixArt-Sigma-XL-2-512-MS,\" Hugging Face model repository, revision `{MODEL_REVISION}`. [Online]. Available: https://huggingface.co/PixArt-alpha/PixArt-Sigma-XL-2-512-MS\n\n"
+        "[6] K. Valcorza, \"pixart-sigma-generation-pipeline: README,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/pixart-sigma-generation-pipeline/blob/main/README.md\n\n"
+        "[7] K. Valcorza, \"pixart-sigma-generation-pipeline: model card,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/pixart-sigma-generation-pipeline/blob/main/MODEL_CARD.md\n\n"
+        "[8] K. Valcorza, \"pixart-sigma-generation-pipeline: weights notes,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/pixart-sigma-generation-pipeline/blob/main/docs/WEIGHTS.md\n\n"
+        "[9] DIMER, \"DIMER Notebook Specification 2.5 and Model Card Specification 1.1,\" fleet specifications in the ml-worker repository.\n"
     ),
 }
