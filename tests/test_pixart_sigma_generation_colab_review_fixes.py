@@ -339,7 +339,7 @@ def test_guided_layer_and_collapsed_infrastructure(nb: dict) -> None:
     assert len(titled) == 7 and all(c["metadata"].get("cellView") == "form" for c in titled)
     activity = _cell(nb, "RUN_ACTIVITY = False  # @param")
     assert "outputs/activity" in activity and "reset_to_pretrained()" in activity and "ACTIVITY_GUIDANCE = (1.0, 4.5, 9.0)" in activity
-    assert nb["metadata"]["dimer"]["notebook_spec"] == "2.2"
+    assert nb["metadata"]["dimer"]["notebook_spec"] == "2.5" and nb["metadata"]["dimer"]["notebook_kind"] == "TUTORIAL"
 
 
 # --- PX-m1: BYOD contract -------------------------------------------------------------------------------------------
@@ -527,7 +527,8 @@ def test_expectations_match_the_record_and_the_conclusion_is_conditional(nb: dic
         assert stale not in md, stale
     assert "Read your own Section 8 before concluding" in md
     assert "**Pretraining overlap.**" in md and "**Run-to-run variability.**" in md
-    assert "American Goldfinch 80.33 → 76.32" in md and "label accuracy stayed at 0.50" in md
+    # Tier C T66-1: the Section 8 answer quotes the Colab T4 run of blob 4cf243c1.
+    assert "American Goldfinch 80.33 → 74.82, 75.56 and 79.74" in md and "it moved from 0.50 to 0.58" in md
     assert "{{" not in md and "}}" not in md and "`{id, image, caption}`" in md
 
 
