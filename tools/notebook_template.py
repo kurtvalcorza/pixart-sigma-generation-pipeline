@@ -70,6 +70,7 @@ B2 = "the Colab T4 run of blob `adef085a` (25 October 2026)"
 _DATA_CODE = _py(
     """import json
 import os
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -78,29 +79,87 @@ from PIL import Image
 USE_BYOD = False  # @param {type:"boolean"}
 BYOD_PATH = ''  # @param {type:"string"}
 
+class BYODRefusal(ValueError):
+    \"\"\"A refused BYOD input: ``BYODRefusal(file_name, reason_and_fix)``.\"\"\"
+
+    dimer_refusal = True
+
+    def __init__(self, file_name, reason):
+        super().__init__(f"{file_name}: {reason}")
+        self.file_name = file_name
+        self.reason = reason
+
+    def _render_traceback_(self):
+        return [f"Refused: {self}"]
+
+
+# What an earlier run of Sections 4 onward left in this session. A refused input removes these results and the
+# outputs/ files below (DAT20), so nothing from that run can pass as a result of the refused file.
+RUN_RESULT_NAMES = (
+    'byod_path', 'file_name', 'uploaded', 'payload', 'byod_records', 'duplicates', 'splits', 'data_source',
+    'captions_csv', 'train_records', 'val_records', 'test_records', 'dataset_report', 'prompts', 'written_csv',
+    'probes', 'records', 'released_before_encoding', 'all_prompts', 'encode_report', 'released', 'scorer', 't0',
+    'frozen_val', 'frozen_test', 'generation_prompts', 'frozen_generation', 'frozen_scores', 'real_reference',
+    'entry', 'frozen_grid', 'adapt_result', 'adapt_seconds', 'adapted_val', 'adapted_test', 'adapted_generation',
+    'adapted_scores', 'comparison', 'row', 'after', 'adapted_grid', 'pair_grid', 'evaluation_report', 'best',
+    'new_generation', 'new_scores', 'i', 'artifact_dir', 'artifact_manifest', 'reloaded', 'reloaded_test', 'parity',
+    'reloaded_best_epoch', 'result_payload', 'path', 'activity_dir', 'activity_rows', 'activity_images', 'guidance',
+    'generation', 'scores', 'activity_grid',
+)
+RUN_OUTPUTS = (
+    'outputs/@STEM@_*',
+)
+
+
+def refuse_byod(file_name, reason, names=None, outputs=None):
+    \"\"\"Remove the earlier run's results and outputs/ files, then stop the cell with one Refused: line naming the file and the fix.\"\"\"
+    for name in RUN_RESULT_NAMES if names is None else names:
+        globals().pop(name, None)
+    for pattern in RUN_OUTPUTS if outputs is None else outputs:
+        for path in Path('.').glob(pattern):
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                path.unlink()
+    reason = str(reason).rstrip('. ')
+    if 'again' not in reason:
+        reason += '; fix the input and run this cell again'
+    raise BYODRefusal(file_name, reason + ' (the earlier results of this session and their outputs/ files were removed).') from None
+
+
 os.makedirs('outputs', exist_ok=True)
 if USE_BYOD:
-    if BYOD_PATH:
-        byod_path = Path(BYOD_PATH)
-        if not byod_path.exists():
-            raise ValueError(f'BYOD_PATH {BYOD_PATH!r} does not exist: give the path of a .zip, or of a folder, holding captions.csv and the images')
-        file_name = byod_path.name
-    else:
-        try:
-            from google.colab import files
-        except ImportError:
-            raise ValueError('The upload dialog exists only on Google Colab: set BYOD_PATH to a .zip or a folder on this machine instead.') from None
-        uploaded = files.upload()
-        if len(uploaded) != 1:
-            raise ValueError(f'Upload exactly one .zip holding captions.csv and the images (got {len(uploaded)} files; a cancelled upload gives 0). Outside Colab, set BYOD_PATH instead.')
-        file_name, payload = next(iter(uploaded.items()))
-        byod_path = Path('work') / file_name
-        byod_path.parent.mkdir(parents=True, exist_ok=True)
-        byod_path.write_bytes(payload)
-    byod_records = load_byod_dataset(byod_path)
-    duplicates = duplicate_images(byod_records)
-    print({'byod_records': len(byod_records), 'duplicates_dropped': len(duplicates), 'duplicate_pairs': duplicates[:10]})
-    splits = split_dataset(byod_records, seed=0)
+    # DAT20: every problem with your data (path, upload, zip, captions.csv, images, split, validation) stops here as one Refused:
+    # line. Only ValueError is caught: load_byod_dataset, split_dataset and dataset_manifest raise it for bad input (a corrupt zip
+    # and non-UTF-8 text included). The pinned sample path below is outside the wrap and keeps its traceback.
+    file_name = (Path(BYOD_PATH).name or BYOD_PATH) if BYOD_PATH else '(no file)'
+    try:
+        if BYOD_PATH:
+            byod_path = Path(BYOD_PATH)
+            if not byod_path.exists():
+                raise BYODRefusal(byod_path.name or BYOD_PATH, f'BYOD_PATH {BYOD_PATH!r} does not exist: give the path of a .zip, or of a folder, holding captions.csv and the images')
+            file_name = byod_path.name
+        else:
+            try:
+                from google.colab import files
+            except ImportError:
+                raise BYODRefusal('(no file)', 'The upload dialog exists only on Google Colab: set BYOD_PATH to a .zip or a folder on this machine instead.') from None
+            uploaded = files.upload()
+            if len(uploaded) != 1:
+                raise BYODRefusal(', '.join(sorted(uploaded)) or '(no file)', f'Upload exactly one .zip holding captions.csv and the images (got {len(uploaded)} files; a cancelled upload gives 0). Outside Colab, set BYOD_PATH instead.')
+            file_name, payload = next(iter(uploaded.items()))
+            byod_path = Path('work') / file_name
+            byod_path.parent.mkdir(parents=True, exist_ok=True)
+            byod_path.write_bytes(payload)
+        byod_records = load_byod_dataset(byod_path)
+        duplicates = duplicate_images(byod_records)
+        print({'byod_records': len(byod_records), 'duplicates_dropped': len(duplicates), 'duplicate_pairs': duplicates[:10]})
+        splits = split_dataset(byod_records, seed=0)
+        dataset_manifest({'train': splits['train'], 'validation': splits['validation'], 'test': splits['test']})  # validate the split here
+    except BYODRefusal as exc:
+        refuse_byod(exc.file_name, exc.reason)
+    except ValueError as exc:
+        refuse_byod(file_name, exc)
     data_source = 'BYOD (' + file_name + ')'
     captions_csv = 'outputs/@STEM@_byod_captions.csv'
 else:
@@ -565,7 +624,7 @@ TEMPLATE = {
                 "loss and the CLIP readings — including the real-photo reference line — may be optimistic about how new these photos "
                 "are to either model. This is inferred from the data descriptions; no photograph was checked against either "
                 "training set.\n\n"
-                "Look for: 36 / 12 / 12 records, six distinct captions, a shorter side around 300..500 px (every photo is "
+                "Look for: 36 / 12 / 12 records, six distinct captions, a shorter side of 298..500 px in " + RECORD + " (every photo is "
                 "centre-cropped to 512²), a written `outputs/{stem}_sample_captions.csv` in the shape BYOD expects, and "
                 "three refusal probes — a missing caption, a 200 px image, a duplicate id — each rejected before the model runs.\n\n"
                 "**Predict before running:** each species gets two test photographs. Section 6 compares every real test photo with "
