@@ -1,0 +1,72 @@
+{
+  "repo": "pixart-sigma-generation-pipeline",
+  "sha": "27ab5079f9a4dccfcdc7b29a4344479f76ab94e4",
+  "notebook": "tutorials/pixart_sigma_generation_colab.ipynb",
+  "blob": "9bbec3f2999ba0297094141a00fd68661845007a",
+  "gpu": "T4",
+  "session": "suite-pixart-27ab507-cece",
+  "started_utc": "2026-11-03T05:00:42+00:00",
+  "runner": "Colab CLI `colab exec -f` on a fresh session (not a browser Run all)",
+  "overrides": [
+    {
+      "name": "USE_BYOD",
+      "from": "False",
+      "to": "True"
+    },
+    {
+      "name": "BYOD_PATH",
+      "from": "''",
+      "to": "'/etc'"
+    }
+  ],
+  "run_copy_blob": "5bfad84c99711d70fdb02e40f5cb1b14603cf848",
+  "run_copy_sha256": "6a7e8762ab6eff74f70846c7ba7920f0bfccacf7ac82ce4c7149aab6d749310d",
+  "run_copy_note": "refusal run: the run copy is the committed notebook with the listed assignment overrides, cut immediately after the refusal cell and re-serialised (nbformat layout); input_unchanged compares against that copy",
+  "truncated_after_cell": "pixart_sigma_generation-17",
+  "refusal_cell_ref": "pixart_sigma_generation-17",
+  "refusal_cell_index": 8,
+  "cells_dropped": 13,
+  "code_cells_dropped": 6,
+  "original_sha256": "fa054583d362180e794e780e8bb0e350214b5a07457c1fb66ea932df22194d5f",
+  "status": "[suite-pixart-27ab507-cece] gpu-t4-s-usw1b0-2cdf9hp1yzg38 | Hardware: T4 | Shape: Standard | Variant: GPU | Status: IDLE",
+  "exec_exit_code": 0,
+  "stopped": true,
+  "stop_verified": true,
+  "wall_s": 473.1,
+  "input_unchanged": true,
+  "executed_file": "pixart_sigma_generation_colab_27ab507_colab-cli-t4_output.ipynb",
+  "log_cells": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "log_total": 8,
+  "code_cells": 8,
+  "executed_cells": 5,
+  "errors": [
+    {
+      "cell": "pixart_sigma_generation-17",
+      "ename": "IsolatedCellRefusal",
+      "evalue": "etc: /etc: the folder must contain captions.csv (columns id, file, caption); fix the input and run this cell again (the earlier results of this session and their outputs/ files were removed)."
+    }
+  ],
+  "execution_counts": [],
+  "sequential": null,
+  "executed_sha256": "54a6e523d748c2c955d6301ba617bea96e4d51360ad59ad1b1f71ec23229bac3",
+  "log_sequential_complete": true,
+  "mode": "expect_refusal",
+  "refusal_line": "Refused: etc: /etc: the folder must contain captions.csv (columns id, file, caption); fix the input and run this cell again (the earlier results of this session and their outputs/ files were removed).",
+  "halting_cell_index": 8,
+  "halting_cell_id": "pixart_sigma_generation-17",
+  "error_cells": [
+    8
+  ],
+  "refusal_fail_reasons": [],
+  "refusal_ok": true,
+  "verdict": "PASS"
+}
